@@ -479,7 +479,7 @@ namespace App.ViewModels
         }
 
         // Task Management Methods
-        private async Task AddTaskAsync()
+        public async Task AddTaskAsync()
         {
             if (string.IsNullOrWhiteSpace(NewTaskName))
             {
@@ -520,6 +520,25 @@ namespace App.ViewModels
             // Don't toggle here - the CheckBox binding already updated IsDone
             // Just save the updated state to persistence
             await _taskService.UpdateTaskAsync(task);
+        }
+
+        public async Task UpdateTaskAsync(TaskItem task)
+        {
+            if (task == null) return;
+
+            if (await _taskService.UpdateTaskAsync(task))
+            {
+                // Task updated successfully
+                var existingIndex = Tasks.IndexOf(Tasks.FirstOrDefault(t => t.Id == task.Id));
+                if (existingIndex >= 0)
+                {
+                    Tasks[existingIndex] = task;
+                }
+            }
+            else
+            {
+                await App.Current?.MainPage?.DisplayAlert("Error", "Failed to update task", "OK");
+            }
         }
 
         private async Task DeleteTaskAsync(TaskItem task)

@@ -23,8 +23,7 @@ namespace App.Services
 
         public TaskService()
         {
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var appFolder = Path.Combine(appDataPath, "FileExplorerApp");
+            var appFolder = Path.Combine(AppContext.BaseDirectory, "Data");
             if (!Directory.Exists(appFolder))
             {
                 Directory.CreateDirectory(appFolder);

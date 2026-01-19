@@ -34,6 +34,8 @@ namespace App
 
             // Register Pages
             builder.Services.AddSingleton<FileExplorerPage>();
+            builder.Services.AddSingleton<TasksPage>();
+            builder.Services.AddSingleton<CreateTaskModal>();
 
 #if DEBUG
     		builder.Logging.AddDebug();

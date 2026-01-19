@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="App.TasksPage"
+             Title="Tasks"
+             BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:TaskTextDecorationConverter x:Key="TaskTextDecorationConverter"
+                                                    xmlns:converters="clr-namespace:App.Converters"/>
+            <converters:TaskOpacityConverter x:Key="TaskOpacityConverter"
+                                             xmlns:converters="clr-namespace:App.Converters"/>
+            <converters:StringIsNotNullOrEmptyConverter x:Key="StringIsNotNullOrEmptyConverter"
+                                                       xmlns:converters="clr-namespace:App.Converters"/>
+            <converters:CountIsZeroConverter x:Key="CountIsZeroConverter"
+                                             xmlns:converters="clr-namespace:App.Converters"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*"
+          Padding="12"
+          RowSpacing="12">
+
+        <!-- Create Task Button -->
+        <Button Grid.Row="0"
+                Text="➕ Create New Task"
+                Clicked="OnCreateTaskClicked"
+                BackgroundColor="#4CAF50"
+                TextColor="White"
+                Padding="12,12"
+                FontSize="16"
+                FontAttributes="Bold"
+                CornerRadius="8"/>
+
+        <!-- Tasks List Section -->
+        <Grid Grid.Row="1"
+              RowDefinitions="Auto,*"
+              RowSpacing="12">
+            <Label Text="📋 Your Tasks"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
+
+            <CollectionView Grid.Row="1"
+                            ItemsSource="{Binding Tasks}"
+                            SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#444444}"
+                                StrokeThickness="1"
+                                BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#252525}"
+                                Padding="12"
+                                Margin="0,6">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6"/>
+                            </Border.StrokeShape>
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                                  ColumnDefinitions="Auto,*,Auto"
+                                  RowSpacing="6"
+                                  ColumnSpacing="8">
+                                <!-- Checkbox and Title Row -->
+                                <CheckBox Grid.Row="0"
+                                          Grid.Column="0"
+                                          IsChecked="{Binding IsDone}"
+                                          CheckedChanged="OnTaskCheckBoxChanged"/>
+                                <Label Grid.Row="0"
+                                       Grid.Column="1"
+                                       Text="{Binding Name}"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       TextDecorations="{Binding IsDone, Converter={StaticResource TaskTextDecorationConverter}}"
+                                       Opacity="{Binding IsDone, Converter={StaticResource TaskOpacityConverter}}"
+                                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
+                                <Button Grid.Row="0"
+                                        Grid.Column="2"
+                                        Text="❌"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTaskCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="#F44336"
+                                        TextColor="White"
+                                        Padding="6,4"
+                                        FontSize="12"/>
+
+                                <!-- Description -->
+                                <Label Grid.Row="1"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="3"
+                                       Text="{Binding Description}"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"
+                                       LineBreakMode="WordWrap"
+                                       IsVisible="{Binding Description, Converter={StaticResource StringIsNotNullOrEmptyConverter}}"/>
+
+                                <!-- End Date -->
+                                <Label Grid.Row="2"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="3"
+                                       FontSize="11"
+                                       TextColor="{AppThemeBinding Light=#999999, Dark=#888888}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="📅 Due: "/>
+                                            <Span Text="{Binding EndDate, StringFormat='{0:MMM dd, yyyy}'}"/>
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+
+                                <!-- Attachment Path -->
+                                <Label Grid.Row="3"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="3"
+                                       Text="{Binding AttachmentPath}"
+                                       FontSize="10"
+                                       TextColor="#2196F3"
+                                       LineBreakMode="TailTruncation"
+                                       IsVisible="{Binding AttachmentPath, Converter={StaticResource StringIsNotNullOrEmptyConverter}}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer NumberOfTapsRequired="1"
+                                                              Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.NavigateToTaskPathCommand}"
+                                                              CommandParameter="{Binding .}"/>
+                                    </Label.GestureRecognizers>
+                                </Label>
+
+                                <!-- Edit Area (Double-click to edit) -->
+                                <Grid Grid.Row="4"
+                                      Grid.Column="0"
+                                      Grid.ColumnSpan="3"
+                                      RowDefinitions="Auto,Auto,Auto,Auto">
+                                    <Label Grid.Row="0"
+                                           Text="(Double-click to edit)"
+                                           FontSize="10"
+                                           TextColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                                           HorizontalTextAlignment="Center"
+                                           Margin="0,4"
+                                           x:Name="DoubleClickHint"/>
+
+                                    <!-- Edit Mode Controls -->
+                                    <Entry Grid.Row="1"
+                                           Placeholder="Task name"
+                                           Text="{Binding Name}"
+                                           PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                                           BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                                           x:Name="EditNameEntry"
+                                           IsVisible="False"/>
+
+                                    <Editor Grid.Row="2"
+                                            Placeholder="Description"
+                                            Text="{Binding Description}"
+                                            HeightRequest="60"
+                                            PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                                            TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                                            x:Name="EditDescriptionEditor"
+                                            IsVisible="False"/>
+
+                                    <Grid Grid.Row="3"
+                                          ColumnDefinitions="*,*"
+                                          ColumnSpacing="8"
+                                          IsVisible="False"
+                                          x:Name="EditButtonsGrid">
+                                        <Button Grid.Column="0"
+                                                Text="✅ Save"
+                                                BackgroundColor="#4CAF50"
+                                                TextColor="White"
+                                                Padding="8,6"
+                                                FontSize="12"
+                                                Clicked="OnEditSaveClicked"/>
+                                        <Button Grid.Column="1"
+                                                Text="❌ Cancel"
+                                                BackgroundColor="#F44336"
+                                                TextColor="White"
+                                                Padding="8,6"
+                                                FontSize="12"
+                                                Clicked="OnEditCancelClicked"/>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Double-click gesture on entire border -->
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer NumberOfTapsRequired="2"
+                                                      Tapped="OnTaskDoubleTapped"/>
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Empty State -->
+            <Label Grid.Row="1"
+                   Text="📭 No tasks yet. Create one to get started!"
+                   FontSize="14"
+                   TextColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                   HorizontalTextAlignment="Center"
+                   VerticalTextAlignment="Center"
+                   IsVisible="{Binding Tasks, Converter={StaticResource CountIsZeroConverter}}"/>
+        </Grid>
+    </Grid>
+</ContentPage>

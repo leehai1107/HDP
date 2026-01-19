@@ -6,9 +6,18 @@
     xmlns:local="clr-namespace:App"
     Title="File Explorer">
 
-    <ShellContent
-        Title="File Explorer"
-        ContentTemplate="{DataTemplate local:FileExplorerPage}"
-        Route="FileExplorer"/>
+    <TabBar>
+        <ShellContent
+            Title="File Explorer"
+            Icon="folder.png"
+            ContentTemplate="{DataTemplate local:FileExplorerPage}"
+            Route="FileExplorer"/>
+
+        <ShellContent
+            Title="Tasks"
+            Icon="checklist.png"
+            ContentTemplate="{DataTemplate local:TasksPage}"
+            Route="Tasks"/>
+    </TabBar>
 
 </Shell>
