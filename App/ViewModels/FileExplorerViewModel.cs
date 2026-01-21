@@ -783,11 +783,21 @@ namespace App.ViewModels
 
             if (_fileService.PathExists(task.AttachmentPath))
             {
-                // Navigate to the File Explorer tab first
-                await Shell.Current.GoToAsync("//FileExplorer");
-                
-                // Then navigate to the path
-                await NavigateToPath(task.AttachmentPath, true);
+                // Open the folder in Windows Explorer
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"\"{task.AttachmentPath}\"",
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    await App.Current?.MainPage?.DisplayAlert("Error", 
+                        $"Failed to open folder in Windows Explorer: {ex.Message}", "OK");
+                }
             }
             else
             {
