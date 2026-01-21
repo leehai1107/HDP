@@ -6,6 +6,11 @@
     xmlns:local="clr-namespace:App"
     Title="File Explorer">
 
+    <ShellContent
+        Title="Login"
+        ContentTemplate="{DataTemplate local:LoginPage}"
+        Route="Login"/>
+
     <TabBar>
         <ShellContent
             Title="File Explorer"
@@ -18,6 +23,12 @@
             Icon="checklist.png"
             ContentTemplate="{DataTemplate local:TasksPage}"
             Route="Tasks"/>
+
+        <ShellContent
+            Title="Users"
+            Icon="dotnet_bot.png"
+            ContentTemplate="{DataTemplate local:UserManagementPage}"
+            Route="Users"/>
     </TabBar>
 
 </Shell>

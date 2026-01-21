@@ -21,6 +21,7 @@ namespace App.ViewModels
         private readonly IConfigurationService _configService;
         private readonly ITaskService _taskService;
         private readonly IFileIndexService _indexService;
+        private readonly IAuthenticationService _authService;
         private readonly Stack<string> _backStack = new();
         private readonly Stack<string> _forwardStack = new();
         private System.Threading.Timer? _searchDebounceTimer;
@@ -48,12 +49,14 @@ namespace App.ViewModels
         private DateTime _newTaskEndDate = DateTime.Now.AddDays(1);
         private string _newTaskAttachmentPath = string.Empty;
         private string _newTaskStatus = "Pending";
+        private User? _selectedAssignedUser = null;
 
         public ObservableCollection<FileItem> Items { get; } = new();
         public ObservableCollection<FileItem> SelectedItems { get; } = new();
         public ObservableCollection<TaskItem> Tasks { get; } = new();
         public ObservableCollection<FileItem> FilteredItems { get; } = new();
         public ObservableCollection<TaskItem> FilteredTasks { get; } = new();
+        public ObservableCollection<User> AssignableUsers { get; } = new();
 
         private void OnSelectedItemsChanged()
         {
@@ -335,6 +338,22 @@ namespace App.ViewModels
             }
         }
 
+        public User? SelectedAssignedUser
+        {
+            get => _selectedAssignedUser;
+            set
+            {
+                if (_selectedAssignedUser != value)
+                {
+                    _selectedAssignedUser = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool IsAdmin => _authService?.IsAdmin ?? false;
+        public string CurrentUsername => _authService?.CurrentUser?.DisplayName ?? "User";
+
         public ICommand NavigateCommand { get; }
         public ICommand GoBackCommand { get; }
         public ICommand GoForwardCommand { get; }
@@ -359,12 +378,13 @@ namespace App.ViewModels
         public ICommand SwitchToActiveTabCommand { get; }
         public ICommand SwitchToDoneTabCommand { get; }
 
-        public FileExplorerViewModel(IFileExplorerService fileService, IConfigurationService configService, ITaskService taskService, IFileIndexService indexService)
+        public FileExplorerViewModel(IFileExplorerService fileService, IConfigurationService configService, ITaskService taskService, IFileIndexService indexService, IAuthenticationService authService)
         {
             _fileService = fileService;
             _configService = configService;
             _taskService = taskService;
             _indexService = indexService;
+            _authService = authService;
 
             // Subscribe to collection changes
             SelectedItems.CollectionChanged += (s, e) => OnSelectedItemsChanged();
@@ -399,6 +419,7 @@ namespace App.ViewModels
             CurrentPath = _configService.GetRootPath();
             await LoadItemsAsync();
             await LoadTasksAsync();
+            LoadAssignableUsers();
             
             // Build index automatically in background
             _ = Task.Run(async () =>
@@ -448,6 +469,19 @@ namespace App.ViewModels
                 }
                 FilterTasks(); // Update filtered collection
                 UpdateTaskCounts(); // Update tab counts
+            });
+        }
+
+        private void LoadAssignableUsers()
+        {
+            var users = _authService.GetAssignableUsers();
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                AssignableUsers.Clear();
+                foreach (var user in users)
+                {
+                    AssignableUsers.Add(user);
+                }
             });
         }
 
@@ -706,7 +740,9 @@ namespace App.ViewModels
                 EndDate = NewTaskEndDate,
                 AttachmentPath = NewTaskAttachmentPath,
                 Status = string.IsNullOrWhiteSpace(NewTaskStatus) ? "Pending" : NewTaskStatus,
-                IsDone = false
+                IsDone = false,
+                AssignedTo = SelectedAssignedUser?.DisplayName ?? string.Empty,
+                AssignedToId = SelectedAssignedUser?.Id ?? string.Empty
             };
 
             if (await _taskService.AddTaskAsync(task))
@@ -721,6 +757,7 @@ namespace App.ViewModels
                 NewTaskEndDate = DateTime.Now.AddDays(1);
                 NewTaskAttachmentPath = string.Empty;
                 NewTaskStatus = "Pending";
+                SelectedAssignedUser = null;
             }
             else
             {

@@ -1,15 +1,19 @@
 using App.Models;
 using App.ViewModels;
+using App.Services;
 using Microsoft.Maui.Controls;
 
 namespace App
 {
     public partial class TasksPage : ContentPage
     {
-        public TasksPage(FileExplorerViewModel viewModel)
+        private readonly IAuthenticationService _authService;
+
+        public TasksPage(FileExplorerViewModel viewModel, IAuthenticationService authService)
         {
             InitializeComponent();
             BindingContext = viewModel;
+            _authService = authService;
         }
 
         protected override async void OnAppearing()
@@ -127,6 +131,16 @@ namespace App
                         viewModel.NavigateToTaskPathCommand.Execute(task);
                     }
                 }
+            }
+        }
+
+        private async void OnLogoutClicked(object sender, EventArgs e)
+        {
+            bool confirm = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
+            if (confirm)
+            {
+                _authService.Logout();
+                await Shell.Current.GoToAsync("//Login");
             }
         }
     }

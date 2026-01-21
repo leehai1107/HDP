@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="App.UserManagementPage"
+             Title="User Management">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+        <!-- Header -->
+        <HorizontalStackLayout Grid.Row="0" Spacing="10" Margin="0,0,0,20">
+            <Label Text="User Management"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Start"/>
+            <Button Text="Add User"
+                    Command="{Binding AddUserCommand}"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="White"
+                    HorizontalOptions="End"/>
+            <Button Text="Logout"
+                    Command="{Binding LogoutCommand}"
+                    BackgroundColor="{StaticResource Gray600}"
+                    TextColor="White"
+                    HorizontalOptions="End"/>
+        </HorizontalStackLayout>
+
+        <!-- Users List -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding Users}"
+                        SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,5"
+                            Padding="15"
+                            StrokeThickness="1"
+                            Stroke="{StaticResource Gray300}"
+                            Background="{StaticResource Gray100}"
+                            StrokeShape="RoundRectangle 8">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                            <!-- User Info -->
+                            <VerticalStackLayout Grid.Column="0" Spacing="5">
+                                <Label Text="{Binding DisplayName}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"/>
+                                <Label Text="{Binding Username}"
+                                       FontSize="14"
+                                       TextColor="{StaticResource Gray600}"/>
+                                <HorizontalStackLayout Spacing="10">
+                                    <Label Text="{Binding Role}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource Primary}"/>
+                                    <Label Text="●"
+                                           FontSize="12"
+                                           TextColor="{StaticResource Gray400}"/>
+                                    <Label Text="{Binding IsActive, StringFormat='Status: {0}'}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource Gray600}"/>
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+
+                            <!-- Actions -->
+                            <Button Grid.Column="2"
+                                    Text="Edit"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditUserCommand}"
+                                    CommandParameter="{Binding}"
+                                    BackgroundColor="{StaticResource Primary}"
+                                    TextColor="White"
+                                    Margin="5,0"/>
+                            
+                            <Button Grid.Column="3"
+                                    Text="Toggle Active"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ToggleUserActiveCommand}"
+                                    CommandParameter="{Binding}"
+                                    BackgroundColor="{StaticResource Gray600}"
+                                    TextColor="White"
+                                    Margin="5,0"/>
+
+                            <Button Grid.Column="4"
+                                    Text="Delete"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteUserCommand}"
+                                    CommandParameter="{Binding}"
+                                    BackgroundColor="Red"
+                                    TextColor="White"
+                                    Margin="5,0"
+                                    IsEnabled="{Binding Role, Converter={StaticResource StringIsNotNullOrEmptyConverter}}"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- User Form (Add/Edit) -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding IsFormVisible}"
+                Padding="20"
+                Margin="0,20,0,0"
+                StrokeThickness="2"
+                Stroke="{StaticResource Primary}"
+                Background="{StaticResource Gray100}"
+                StrokeShape="RoundRectangle 10">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="{Binding FormTitle}"
+                       FontSize="18"
+                       FontAttributes="Bold"/>
+
+                <Label Text="Username"/>
+                <Entry Text="{Binding EditUsername}"/>
+
+                <Label Text="Password"/>
+                <Entry Text="{Binding EditPassword}" IsPassword="True"/>
+
+                <Label Text="Display Name"/>
+                <Entry Text="{Binding EditDisplayName}"/>
+
+                <Label Text="Role"/>
+                <Picker ItemsSource="{Binding Roles}"
+                        SelectedItem="{Binding EditRole}"/>
+
+                <HorizontalStackLayout Spacing="10" Margin="0,10,0,0">
+                    <Button Text="Save"
+                            Command="{Binding SaveUserCommand}"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            HorizontalOptions="Start"/>
+                    <Button Text="Cancel"
+                            Command="{Binding CancelEditCommand}"
+                            BackgroundColor="{StaticResource Gray600}"
+                            TextColor="White"
+                            HorizontalOptions="Start"/>
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

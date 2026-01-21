@@ -4,6 +4,10 @@
              x:Class="App.TasksPage"
              Title="Tasks"
              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#121212}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding CurrentUsername}" Order="Secondary"/>
+        <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" Order="Secondary"/>
+    </ContentPage.ToolbarItems>
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:TaskTextDecorationConverter x:Key="TaskTextDecorationConverter"
@@ -167,6 +171,16 @@
                                             <FormattedString>
                                                 <Span Text="📊 "/>
                                                 <Span Text="{Binding Status}" FontAttributes="Bold"/>
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                    <Label FontSize="12" 
+                                           TextColor="#2196F3"
+                                           IsVisible="{Binding AssignedTo, Converter={StaticResource StringIsNotNullOrEmptyConverter}}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="👤 "/>
+                                                <Span Text="{Binding AssignedTo}" FontAttributes="Bold"/>
                                             </FormattedString>
                                         </Label.FormattedText>
                                     </Label>

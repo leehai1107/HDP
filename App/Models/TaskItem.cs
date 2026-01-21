@@ -96,6 +96,34 @@ namespace App.Models
             }
         }
 
+        private string _assignedTo = string.Empty;
+        public string AssignedTo
+        {
+            get => _assignedTo;
+            set
+            {
+                if (_assignedTo != value)
+                {
+                    _assignedTo = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _assignedToId = string.Empty;
+        public string AssignedToId
+        {
+            get => _assignedToId;
+            set
+            {
+                if (_assignedToId != value)
+                {
+                    _assignedToId = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public int RemainingDays
         {
             get

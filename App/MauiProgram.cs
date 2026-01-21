@@ -29,6 +29,7 @@ namespace App
             builder.Services.AddSingleton<IFileIndexService, FileIndexService>();
             builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
             builder.Services.AddSingleton<ITaskService, TaskService>();
+            builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 
             // Register ViewModels
             builder.Services.AddSingleton<FileExplorerViewModel>();
@@ -37,6 +38,8 @@ namespace App
             builder.Services.AddSingleton<FileExplorerPage>();
             builder.Services.AddSingleton<TasksPage>();
             builder.Services.AddSingleton<CreateTaskModal>();
+            builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<UserManagementPage>();
 
 #if DEBUG
     		builder.Logging.AddDebug();

@@ -56,6 +56,17 @@
                        BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
 
+                <Label Text="Assign To (optional)"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#333333, Dark=#CCCCCC}"/>
+                <Picker ItemsSource="{Binding AssignableUsers}"
+                        ItemDisplayBinding="{Binding DisplayName}"
+                        SelectedItem="{Binding SelectedAssignedUser}"
+                        Title="Select user to assign"
+                        BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
+
                 <Label Text="Attachment Folder (optional)"
                        FontSize="12"
                        FontAttributes="Bold"

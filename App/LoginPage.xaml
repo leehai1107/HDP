@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="App.LoginPage"
+             Title="Login"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False">
+
+    <Grid VerticalOptions="Center" HorizontalOptions="Center" Padding="40">
+        <VerticalStackLayout Spacing="20" WidthRequest="400">
+            <!-- App Title -->
+            <Label Text="HDP File Manager"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   Margin="0,0,0,20"/>
+
+            <!-- Login Card -->
+            <Border StrokeThickness="1"
+                    Stroke="{StaticResource Gray300}"
+                    Background="{StaticResource Gray100}"
+                    Padding="30"
+                    StrokeShape="RoundRectangle 10">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Sign In"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"
+                           Margin="0,0,0,10"/>
+
+                    <!-- Username -->
+                    <Label Text="Username"/>
+                    <Entry x:Name="UsernameEntry"
+                           Placeholder="Enter username"
+                           Text="{Binding Username}"/>
+
+                    <!-- Password -->
+                    <Label Text="Password"/>
+                    <Entry x:Name="PasswordEntry"
+                           Placeholder="Enter password"
+                           IsPassword="True"
+                           Text="{Binding Password}"
+                           Completed="OnLoginClicked"/>
+
+                    <!-- Error Message -->
+                    <Label x:Name="ErrorLabel"
+                           Text="{Binding ErrorMessage}"
+                           TextColor="Red"
+                           IsVisible="{Binding HasError}"
+                           FontSize="12"
+                           HorizontalOptions="Center"/>
+
+                    <!-- Login Button -->
+                    <Button Text="Login"
+                            Clicked="OnLoginClicked"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            HeightRequest="50"
+                            Margin="0,10,0,0"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Default Credentials Info -->
+            <Label Text="Default: admin / admin"
+                   FontSize="12"
+                   HorizontalOptions="Center"
+                   TextColor="{StaticResource Gray600}"/>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

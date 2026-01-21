@@ -4,6 +4,10 @@
              x:Class="App.FileExplorerPage"
              Title="File Explorer"
              BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding CurrentUsername}" Order="Secondary"/>
+        <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" Order="Secondary"/>
+    </ContentPage.ToolbarItems>
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:IntToBoolConverter x:Key="IntToBoolConverter"
