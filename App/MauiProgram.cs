@@ -26,6 +26,7 @@ namespace App
             // Register services
             builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
             builder.Services.AddSingleton<IFileExplorerService, FileExplorerService>();
+            builder.Services.AddSingleton<IFileIndexService, FileIndexService>();
             builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
             builder.Services.AddSingleton<ITaskService, TaskService>();
 

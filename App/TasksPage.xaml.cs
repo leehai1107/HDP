@@ -6,8 +6,6 @@ namespace App
 {
     public partial class TasksPage : ContentPage
     {
-        private TaskItem? _editingTask = null;
-
         public TasksPage(FileExplorerViewModel viewModel)
         {
             InitializeComponent();
@@ -23,108 +21,112 @@ namespace App
             }
         }
 
-        private async void OnCreateTaskClicked(object sender, EventArgs e)
-        {
-            // Reset form fields
-            if (BindingContext is FileExplorerViewModel viewModel)
-            {
-                viewModel.NewTaskName = string.Empty;
-                viewModel.NewTaskDescription = string.Empty;
-                viewModel.NewTaskEndDate = DateTime.Now.AddDays(1);
-                viewModel.NewTaskAttachmentPath = string.Empty;
-            }
-
-            // Show modal
-            await Navigation.PushModalAsync(new CreateTaskModal((FileExplorerViewModel)BindingContext));
-        }
-
         private void OnTaskCheckBoxChanged(object sender, CheckedChangedEventArgs e)
         {
             if (sender is CheckBox checkBox && checkBox.BindingContext is TaskItem task && BindingContext is FileExplorerViewModel viewModel)
             {
-                // Directly call the async method instead of using command to avoid UI freeze
                 MainThread.BeginInvokeOnMainThread(async () => await viewModel.ToggleTaskDoneAsync(task));
             }
         }
 
-        private void OnTaskDoubleTapped(object sender, TappedEventArgs e)
+        private async void OnNameDoubleTapped(object sender, TappedEventArgs e)
         {
-            if (sender is Border border && border.BindingContext is TaskItem task)
+            if (sender is Label label && label.BindingContext is TaskItem task)
             {
-                _editingTask = task;
-                
-                // Find the edit controls within the border's content
-                if (border.Content is Grid grid)
+                string name = await DisplayPromptAsync("Edit Name", "Task Name:", initialValue: task.Name);
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    // Find the hint label (row 4)
-                    var hintLabel = grid.FindByName<Label>("DoubleClickHint");
-                    var editNameEntry = grid.FindByName<Entry>("EditNameEntry");
-                    var editDescriptionEditor = grid.FindByName<Editor>("EditDescriptionEditor");
-                    var editButtonsGrid = grid.FindByName<Grid>("EditButtonsGrid");
-
-                    if (hintLabel != null && editNameEntry != null && editDescriptionEditor != null && editButtonsGrid != null)
+                    task.Name = name;
+                    
+                    if (BindingContext is FileExplorerViewModel viewModel)
                     {
-                        // Hide hint and show edit controls
-                        hintLabel.IsVisible = false;
-                        editNameEntry.IsVisible = true;
-                        editDescriptionEditor.IsVisible = true;
-                        editButtonsGrid.IsVisible = true;
-
-                        // Focus on the name entry
-                        editNameEntry.Focus();
+                        await viewModel.UpdateTaskAsync(task);
                     }
                 }
             }
         }
 
-        private async void OnEditSaveClicked(object sender, EventArgs e)
+        private async void OnDescriptionDoubleTapped(object sender, TappedEventArgs e)
         {
-            if (_editingTask != null && BindingContext is FileExplorerViewModel viewModel)
+            if (sender is Label label && label.BindingContext is TaskItem task)
             {
-                if (sender is Button button && button.Parent is Grid buttonGrid && buttonGrid.Parent is Grid mainGrid)
+                string description = await DisplayPromptAsync("Edit Description", "Description:", initialValue: task.Description);
+                if (description != null)
                 {
-                    // Find entry and editor
-                    var editNameEntry = mainGrid.FindByName<Entry>("EditNameEntry");
-                    var editDescriptionEditor = mainGrid.FindByName<Editor>("EditDescriptionEditor");
-
-                    if (editNameEntry != null && editDescriptionEditor != null)
+                    task.Description = description;
+                    
+                    if (BindingContext is FileExplorerViewModel viewModel)
                     {
-                        _editingTask.Name = editNameEntry.Text ?? string.Empty;
-                        _editingTask.Description = editDescriptionEditor.Text ?? string.Empty;
-
-                        // Update task via service
-                        await viewModel.UpdateTaskAsync(_editingTask);
-
-                        // Hide edit controls
-                        HideEditControls(mainGrid);
+                        await viewModel.UpdateTaskAsync(task);
                     }
                 }
             }
         }
 
-        private void OnEditCancelClicked(object sender, EventArgs e)
+        private async void OnDateDoubleTapped(object sender, TappedEventArgs e)
         {
-            if (sender is Button button && button.Parent is Grid buttonGrid && buttonGrid.Parent is Grid mainGrid)
+            if (sender is Label label && label.BindingContext is TaskItem task)
             {
-                HideEditControls(mainGrid);
+                var result = await DisplayPromptAsync("Edit Due Date", "Enter date (MM/DD/YYYY):", initialValue: task.EndDate.ToString("MM/dd/yyyy"));
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    if (DateTime.TryParse(result, out DateTime newDate))
+                    {
+                        task.EndDate = newDate;
+                        
+                        if (BindingContext is FileExplorerViewModel viewModel)
+                        {
+                            await viewModel.UpdateTaskAsync(task);
+                        }
+                    }
+                    else
+                    {
+                        await DisplayAlert("Invalid Date", "Please enter a valid date in MM/DD/YYYY format", "OK");
+                    }
+                }
             }
-
-            _editingTask = null;
         }
 
-        private void HideEditControls(Grid mainGrid)
+        private async void OnStatusDoubleTapped(object sender, TappedEventArgs e)
         {
-            var hintLabel = mainGrid.FindByName<Label>("DoubleClickHint");
-            var editNameEntry = mainGrid.FindByName<Entry>("EditNameEntry");
-            var editDescriptionEditor = mainGrid.FindByName<Editor>("EditDescriptionEditor");
-            var editButtonsGrid = mainGrid.FindByName<Grid>("EditButtonsGrid");
-
-            if (hintLabel != null && editNameEntry != null && editDescriptionEditor != null && editButtonsGrid != null)
+            if (sender is Label label && label.BindingContext is TaskItem task)
             {
-                hintLabel.IsVisible = true;
-                editNameEntry.IsVisible = false;
-                editDescriptionEditor.IsVisible = false;
-                editButtonsGrid.IsVisible = false;
+                string status = await DisplayPromptAsync("Edit Status", "Status:", initialValue: task.Status);
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    task.Status = status;
+                    
+                    if (BindingContext is FileExplorerViewModel viewModel)
+                    {
+                        await viewModel.UpdateTaskAsync(task);
+                    }
+                }
+            }
+        }
+
+        private async void OnCopyPathClicked(object sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is TaskItem task)
+            {
+                if (!string.IsNullOrWhiteSpace(task.AttachmentPath))
+                {
+                    await Clipboard.SetTextAsync(task.AttachmentPath);
+                    await DisplayAlert("Copied", "Path copied to clipboard", "OK");
+                }
+            }
+        }
+
+        private void OnOpenFolderClicked(object sender, EventArgs e)
+        {
+            if (sender is Button button && button.BindingContext is TaskItem task && BindingContext is FileExplorerViewModel viewModel)
+            {
+                if (!string.IsNullOrWhiteSpace(task.AttachmentPath))
+                {
+                    if (viewModel.NavigateToTaskPathCommand.CanExecute(task))
+                    {
+                        viewModel.NavigateToTaskPathCommand.Execute(task);
+                    }
+                }
             }
         }
     }

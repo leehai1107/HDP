@@ -18,17 +18,25 @@
                                                     xmlns:converters="clr-namespace:App.Converters"/>
             <converters:TaskOpacityConverter x:Key="TaskOpacityConverter"
                                              xmlns:converters="clr-namespace:App.Converters"/>
+            <converters:BoolToWidthConverter x:Key="BoolToWidthConverter"
+                                             xmlns:converters="clr-namespace:App.Converters"/>
+            <converters:TaskPanelToggleConverter x:Key="TaskPanelToggleConverter"
+                                                 xmlns:converters="clr-namespace:App.Converters"/>
         </ResourceDictionary>
     </ContentPage.Resources>
 
     <!-- Main Layout: Task Panel (Left) + File Explorer (Right) -->
-    <Grid ColumnDefinitions="300,*"
-          ColumnSpacing="0">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="{Binding IsTaskPanelVisible, Converter={StaticResource BoolToWidthConverter}}"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
         <!-- Task Panel (Left Side) -->
         <Grid Grid.Column="0"
               RowDefinitions="Auto,*"
-              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+              IsVisible="{Binding IsTaskPanelVisible}">
 
             <!-- Task Creation Form -->
             <ScrollView Grid.Row="0"
@@ -81,12 +89,25 @@
                     <BoxView HeightRequest="1"
                              Color="{AppThemeBinding Light=#DDDDDD, Dark=#444444}"
                              Margin="0,10"/>
+                    
+                    <!-- Task Search Box -->
+                    <Border BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                            Stroke="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                            StrokeThickness="1"
+                            Padding="8,4">
+                        <Entry Placeholder="🔍 Search tasks..."
+                               Text="{Binding TaskSearchQuery}"
+                               PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                               TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                               FontSize="12"
+                               HeightRequest="32"/>
+                    </Border>
                 </StackLayout>
             </ScrollView>
 
             <!-- Task List -->
             <CollectionView Grid.Row="1"
-                            ItemsSource="{Binding Tasks}"
+                            ItemsSource="{Binding FilteredTasks}"
                             SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -167,165 +188,357 @@
 
         <!-- File Explorer (Right Side) -->
         <Grid Grid.Column="1"
-              RowDefinitions="Auto,Auto,*,Auto"
-              Padding="0">
-            <!-- Current Path Display -->
-            <Grid ColumnDefinitions="*,Auto"
-                  Padding="12,8"
-                  RowSpacing="8"
-                  BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-                <Label Text="Current Path:"
-                       FontAttributes="Bold"
-                       VerticalOptions="Center"/>
-                <Label Grid.Column="1"
-                       Text="{Binding CurrentPath}"
-                       FontSize="12"
-                       TextColor="{AppThemeBinding Light=#666666, Dark=#CCCCCC}"
+              RowDefinitions="Auto,Auto,Auto,Auto,*"
+              Padding="0"
+              BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+            
+            <!-- Top Toolbar with Toggle Button and Navigation -->
+            <Grid Grid.Row="0"
+                  ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
+                  ColumnSpacing="4"
+                  Padding="8,6"
+                  BackgroundColor="{AppThemeBinding Light=#F3F3F3, Dark=#2D2D2D}">
+                
+                <!-- Toggle Task Panel Button -->
+                <Button Grid.Column="0"
+                        Text="{Binding IsTaskPanelVisible, Converter={StaticResource TaskPanelToggleConverter}}"
+                        Command="{Binding ToggleTaskPanelCommand}"
+                        BackgroundColor="#0078D4"
+                        TextColor="White"
+                        Padding="10,6"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        CornerRadius="3"
+                        WidthRequest="45"
+                        HeightRequest="32"/>
+                
+                <!-- Back Button -->
+                <Button Grid.Column="1"
+                        Text="◀"
+                        Command="{Binding GoBackCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        BorderWidth="1"
+                        Padding="8,4"
+                        FontSize="14"
+                        WidthRequest="36"
+                        HeightRequest="32"/>
+                
+                <!-- Forward Button -->
+                <Button Grid.Column="2"
+                        Text="▶"
+                        Command="{Binding GoForwardCommand}"
+                        IsEnabled="{Binding CanGoForward}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        BorderWidth="1"
+                        Padding="8,4"
+                        FontSize="14"
+                        WidthRequest="36"
+                        HeightRequest="32"/>
+                
+                <!-- Up Button -->
+                <Button Grid.Column="3"
+                        Text="⬆ Up"
+                        Command="{Binding GoPreviousCommand}"
+                        IsEnabled="{Binding CanGoBack}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        BorderWidth="1"
+                        Padding="8,4"
+                        FontSize="13"
+                        HeightRequest="32"
+                        HorizontalOptions="Start"
+                        Margin="4,0,0,0"/>
+                
+                <!-- Refresh Button -->
+                <Button Grid.Column="4"
+                        Text="🔄"
+                        Command="{Binding RefreshCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        BorderWidth="1"
+                        Padding="8,4"
+                        FontSize="16"
+                        WidthRequest="36"
+                        HeightRequest="32"/>
+                
+                <!-- Select Mode Button -->
+                <Button Grid.Column="5"
+                        Text="{Binding IsSelectionMode, Converter={StaticResource SelectionModeConverter}}"
+                        Command="{Binding ToggleSelectionModeCommand}"
+                        BackgroundColor="{Binding IsSelectionMode, Converter={StaticResource SelectionModeColorConverter}}"
+                        TextColor="White"
+                        Padding="10,4"
+                        FontSize="13"
+                        HeightRequest="32"/>
+                
+                <!-- New Folder Button -->
+                <Button Grid.Column="6"
+                        Text="📁+"
+                        Command="{Binding CreateFolderCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        BorderWidth="1"
+                        Padding="8,4"
+                        FontSize="16"
+                        WidthRequest="40"
+                        HeightRequest="32"/>
+            </Grid>
+            
+            <!-- Address Bar -->
+            <Grid Grid.Row="1"
+                  ColumnDefinitions="Auto,*,Auto"
+                  Padding="8,6"
+                  BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#252525}">
+                <Label Text="📂"
+                       FontSize="16"
                        VerticalOptions="Center"
-                       LineBreakMode="TailTruncation"/>
-
-                <Grid Grid.Row="1"
-                      Grid.ColumnSpan="2"
-                      ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+                       Margin="0,0,8,0"/>
+                <Border Grid.Column="1"
+                        BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                        Stroke="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                        StrokeThickness="1"
+                        Padding="8,6">
+                    <Label Text="{Binding CurrentPath}"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                           VerticalOptions="Center"
+                           LineBreakMode="TailTruncation"/>
+                </Border>
+                <Button Grid.Column="2"
+                        Text="📋"
+                        Command="{Binding CopyPathCommand}"
+                        BackgroundColor="#2196F3"
+                        TextColor="White"
+                        Padding="8,6"
+                        FontSize="14"
+                        WidthRequest="36"
+                        HeightRequest="32"
+                        Margin="4,0,0,0"
+                        ToolTipProperties.Text="Copy path"/>
+            </Grid>
+            
+            <!-- Search Box -->
+            <Grid Grid.Row="2"
+                  RowDefinitions="Auto,Auto"
+                  Padding="8,4"
+                  BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#252525}">
+                
+                <!-- Search Input Row -->
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="Auto,*,Auto,Auto"
                       ColumnSpacing="8">
-                    <Button Text="◀ Previous"
-                            Command="{Binding GoPreviousCommand}"
-                            IsEnabled="{Binding CanGoBack}"
-                            BackgroundColor="#2196F3"
+                    <Label Text="🔍"
+                           FontSize="16"
+                           VerticalOptions="Center"/>
+                    <Entry Grid.Column="1"
+                           Placeholder="Search files/folders (supports * and ? wildcards)..."
+                           Text="{Binding FileSearchQuery}"
+                           PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                           BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                           FontSize="13"
+                           HeightRequest="32"
+                           ToolTipProperties.Text="Instant search with filters: ext:cs, file:, folder:, size:>1MB"/>
+                    <Button Grid.Column="2"
+                            Text="📁+ New Folder"
+                            Command="{Binding CreateFolderCommand}"
+                            BackgroundColor="#0078D4"
                             TextColor="White"
-                            Padding="12,8"
-                            FontSize="13"/>
-                    <Button Grid.Column="1"
-                            Text="Next ▶"
-                            Command="{Binding GoForwardCommand}"
-                            IsEnabled="{Binding CanGoForward}"
-                            BackgroundColor="#2196F3"
-                            TextColor="White"
-                            Padding="12,8"
-                            FontSize="13"/>
+                            Padding="12,4"
+                            FontSize="13"
+                            HeightRequest="32"
+                            IsVisible="{Binding IsSelectionMode, Converter={StaticResource InverseBoolConverter}}"/>
                     <Button Grid.Column="3"
-                            Text="{Binding IsSelectionMode, Converter={StaticResource SelectionModeConverter}}"
-                            Command="{Binding ToggleSelectionModeCommand}"
-                            BackgroundColor="{Binding IsSelectionMode, Converter={StaticResource SelectionModeColorConverter}}"
+                            Text="🗑️ Delete Selected"
+                            Command="{Binding DeleteSelectedCommand}"
+                            IsVisible="{Binding IsSelectionMode}"
+                            BackgroundColor="#D13438"
                             TextColor="White"
-                            Padding="12,8"
-                            FontSize="13"/>
-                    <Button Grid.Column="4"
-                            Text="🔄 Refresh"
-                            Command="{Binding RefreshCommand}"
-                            BackgroundColor="#4CAF50"
-                            TextColor="White"
-                            Padding="12,8"/>
-                    <Button Grid.Column="5"
-                            Text="⬆ Up"
-                            Command="{Binding GoBackCommand}"
-                            BackgroundColor="#FF9800"
-                            TextColor="White"
-                            Padding="12,8"/>
+                            Padding="12,4"
+                            FontSize="13"
+                            HeightRequest="32"/>
+                </Grid>
+                
+                <!-- Search Status Row -->
+                <Grid Grid.Row="1"
+                      Margin="24,4,0,0"
+                      ColumnDefinitions="Auto,Auto"
+                      ColumnSpacing="16">
+                    <!-- Search Status -->
+                    <HorizontalStackLayout Grid.Column="0" 
+                                         Spacing="8"
+                                         IsVisible="{Binding IsSearching}">
+                        <ActivityIndicator IsRunning="{Binding IsSearching}"
+                                         Color="#0078D4"
+                                         WidthRequest="16"
+                                         HeightRequest="16"
+                                         VerticalOptions="Center"/>
+                        <Label Text="{Binding SearchStatus}"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                    
+                    <!-- Index Status (Always Visible) -->
+                    <HorizontalStackLayout Grid.Column="1"
+                                         Spacing="8">
+                        <ActivityIndicator IsRunning="{Binding IsIndexing}"
+                                         Color="#FF9800"
+                                         WidthRequest="16"
+                                         HeightRequest="16"
+                                         VerticalOptions="Center"
+                                         IsVisible="{Binding IsIndexing}"/>
+                        <Label Text="{Binding IndexStatus}"
+                               FontSize="11"
+                               TextColor="#FF9800"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
                 </Grid>
             </Grid>
-
-            <!-- Create Folder Section -->
-            <Grid Grid.Row="1"
-                  Padding="12"
-                  ColumnDefinitions="*,Auto,Auto"
-                  ColumnSpacing="8"
-                  BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#252525}">
-                <Entry Placeholder="New folder name"
-                       Text="{Binding NewFolderName}"
-                       PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
-                       BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-                <Button Grid.Column="1"
-                        Text="➕ Create"
-                        Command="{Binding CreateFolderCommand}"
-                        BackgroundColor="#FF5722"
-                        TextColor="White"
-                        Padding="12,8"/>
-                <Button Grid.Column="2"
-                        Text="🗑️ Delete Selected"
-                        Command="{Binding DeleteSelectedCommand}"
-                        IsVisible="{Binding IsSelectionMode}"
-                        BackgroundColor="#F44336"
-                        TextColor="White"
-                        Padding="12,8"/>
+            
+            <!-- Column Headers (Windows Explorer style) -->
+            <Grid Grid.Row="3"
+                  ColumnDefinitions="40,*,120,120"
+                  Padding="8,4"
+                  BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2A2A2A}"
+                  HeightRequest="28">
+                <Label Text=""
+                       Grid.Column="0"/>
+                <Label Text="Name"
+                       Grid.Column="1"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                       VerticalOptions="Center"/>
+                <Label Text="Date modified"
+                       Grid.Column="2"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                       VerticalOptions="Center"/>
+                <Label Text="Size"
+                       Grid.Column="3"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                       VerticalOptions="Center"/>
             </Grid>
 
             <!-- Loading Indicator -->
-            <ActivityIndicator Grid.Row="2"
+            <ActivityIndicator Grid.Row="3"
                                IsRunning="{Binding IsLoading}"
                                IsVisible="{Binding IsLoading}"
-                               Color="#2196F3"/>
+                               Color="#0078D4"
+                               ZIndex="100"/>
 
-            <!-- File List -->
-            <CollectionView Grid.Row="2"
-                            ItemsSource="{Binding Items}"
+            <!-- File List (Windows Explorer style) -->
+            <CollectionView Grid.Row="4"
+                            ItemsSource="{Binding FilteredItems}"
                             SelectionMode="Single"
-                            SelectionChanged="OnCollectionViewSelectionChanged">
+                            SelectionChanged="OnCollectionViewSelectionChanged"
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border
-                            Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#333333}"
+                            Stroke="{AppThemeBinding Light=#E5E5E5, Dark=#333333}"
                             StrokeThickness="0,0,0,1"
-                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
-                            <Grid Padding="12,8"
-                                  ColumnDefinitions="Auto,Auto,*,Auto,Auto"
-                                  ColumnSpacing="12">
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+                            x:Name="ItemBorder">
+                            <FlyoutBase.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="Open"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.NavigateCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                    <MenuFlyoutItem Text="Rename"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RenameCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                    <MenuFlyoutItem Text="Delete"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                </MenuFlyout>
+                            </FlyoutBase.ContextFlyout>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup Name="CommonStates">
+                                    <VisualState Name="Normal">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#E5F3FF, Dark=#1F3A56}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Grid Padding="8,6"
+                                  ColumnDefinitions="40,*,120,120,Auto,Auto"
+                                  ColumnSpacing="8">
 
-                                <!-- Selection Checkbox (visible in selection mode) -->
+                                <!-- Icon or Checkbox -->
                                 <CheckBox Grid.Column="0"
                                           IsChecked="{Binding IsSelected}"
                                           IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSelectionMode}"
-                                          Color="#2196F3"
+                                          Color="#0078D4"
                                           VerticalOptions="Center"
                                           CheckedChanged="OnCheckBoxCheckedChanged"/>
-
-                                <!-- Icon -->
-                                <Label Grid.Column="1"
+                                
+                                <Label Grid.Column="0"
                                        Text="{Binding Icon}"
-                                       FontSize="24"
+                                       FontSize="20"
+                                       VerticalOptions="Center"
+                                       HorizontalOptions="Center"
+                                       IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSelectionMode, Converter={StaticResource InverseBoolConverter}}"/>
+
+                                <!-- Name (with path for search results) -->
+                                <Label Grid.Column="1"
+                                       Text="{Binding DisplayName}"
+                                       FontSize="13"
+                                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                                       VerticalOptions="Center"
+                                       LineBreakMode="TailTruncation"/>
+
+                                <!-- Date Modified -->
+                                <Label Grid.Column="2"
+                                       Text="{Binding Modified, StringFormat='{0:M/d/yyyy h:mm tt}'}"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light=#5F5F5F, Dark=#AAAAAA}"
                                        VerticalOptions="Center"/>
 
-                                <!-- Details -->
-                                <StackLayout Grid.Column="2"
-                                             VerticalOptions="Center"
-                                             Spacing="2">
-                                    <Label Text="{Binding Name}"
-                                           FontAttributes="Bold"
-                                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                                           FontSize="14"/>
-                                    <Grid ColumnDefinitions="Auto,Auto"
-                                          ColumnSpacing="12">
-                                        <Label Text="{Binding Modified, StringFormat='{0:g}'}"
-                                               FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"/>
-                                        <Label Grid.Column="1"
-                                               Text="{Binding SizeDisplay}"
-                                               FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"/>
-                                    </Grid>
-                                </StackLayout>
-
+                                <!-- Size -->
+                                <Label Grid.Column="3"
+                                       Text="{Binding SizeDisplay}"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light=#5F5F5F, Dark=#AAAAAA}"
+                                       VerticalOptions="Center"/>
+                                
                                 <!-- Rename Button -->
-                                <Button Grid.Column="3"
+                                <Button Grid.Column="4"
                                         Text="✏️"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RenameCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Transparent"
-                                        TextColor="#2196F3"
-                                        Padding="4"
+                                        TextColor="#0078D4"
                                         FontSize="16"
+                                        Padding="6,2"
                                         IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSelectionMode, Converter={StaticResource InverseBoolConverter}}"/>
-
+                                
                                 <!-- Delete Button -->
-                                <Button Grid.Column="4"
+                                <Button Grid.Column="5"
                                         Text="🗑️"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="Transparent"
-                                        TextColor="#F44336"
-                                        Padding="4"
+                                        TextColor="#D13438"
                                         FontSize="16"
+                                        Padding="6,2"
                                         IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSelectionMode, Converter={StaticResource InverseBoolConverter}}"/>
                             </Grid>
                         </Border>
@@ -334,7 +547,7 @@
             </CollectionView>
 
             <!-- Empty State -->
-            <StackLayout Grid.Row="2"
+            <StackLayout Grid.Row="4"
                          VerticalOptions="Center"
                          HorizontalOptions="Center"
                          Spacing="12"
@@ -342,9 +555,9 @@
                 <Label Text="📭"
                        FontSize="48"
                        HorizontalTextAlignment="Center"/>
-                <Label Text="Folder is empty"
-                       FontSize="16"
-                       TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"
+                <Label Text="This folder is empty"
+                       FontSize="14"
+                       TextColor="{AppThemeBinding Light=#5F5F5F, Dark=#AAAAAA}"
                        HorizontalTextAlignment="Center"/>
             </StackLayout>
 

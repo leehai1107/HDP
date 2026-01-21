@@ -10,6 +10,7 @@ namespace App.Services
     public interface IFileExplorerService
     {
         Task<List<FileItem>> GetFilesAndFoldersAsync(string path);
+        Task<List<FileItem>> SearchFilesAsync(string rootPath, string searchQuery, System.Threading.CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(string path);
         Task<bool> CreateFolderAsync(string parentPath, string folderName);
         Task<bool> RenameAsync(string oldPath, string newName);
@@ -171,6 +172,164 @@ namespace App.Services
         {
             var parentInfo = new DirectoryInfo(path).Parent;
             return parentInfo?.FullName ?? path;
+        }
+
+        public async Task<List<FileItem>> SearchFilesAsync(string rootPath, string searchQuery, System.Threading.CancellationToken cancellationToken = default)
+        {
+            const int maxResults = 1000;
+
+            if (string.IsNullOrWhiteSpace(searchQuery) || !Directory.Exists(rootPath))
+                return new List<FileItem>();
+
+            var results = new System.Collections.Concurrent.ConcurrentBag<FileItem>();
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    // Use breadth-first search for faster initial results
+                    SearchBreadthFirst(rootPath, searchQuery, results, maxResults, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Search cancelled by user
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error searching files: {ex.Message}");
+                }
+            }, cancellationToken);
+
+            return results.ToList();
+        }
+
+        private static readonly HashSet<string> ExcludedFolders = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "node_modules", ".git", ".vs", ".vscode", "bin", "obj", 
+            ".idea", "packages", ".nuget", "__pycache__", ".svn", 
+            ".hg", "bower_components", "vendor", ".next", ".cache"
+        };
+
+        private static bool MatchesSearch(string fileName, string searchQuery)
+        {
+            // Support wildcard search with * and ?
+            if (searchQuery.Contains('*') || searchQuery.Contains('?'))
+            {
+                try
+                {
+                    var pattern = "^" + System.Text.RegularExpressions.Regex.Escape(searchQuery)
+                        .Replace("\\*", ".*")
+                        .Replace("\\?", ".") + "$";
+                    return System.Text.RegularExpressions.Regex.IsMatch(fileName, pattern, 
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            // Regular substring search
+            return fileName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SearchBreadthFirst(string rootPath, string searchQuery, System.Collections.Concurrent.ConcurrentBag<FileItem> results, int maxResults, System.Threading.CancellationToken cancellationToken)
+        {
+            var queue = new Queue<(string path, int depth)>();
+            queue.Enqueue((rootPath, 0));
+
+            while (queue.Count > 0 && results.Count < maxResults && !cancellationToken.IsCancellationRequested)
+            {
+                var (currentPath, depth) = queue.Dequeue();
+
+                if (depth > 10) // Max depth limit
+                    continue;
+
+                try
+                {
+                    var dirInfo = new DirectoryInfo(currentPath);
+                    
+                    // Get all entries (files and directories) at once
+                    var entries = dirInfo.GetFileSystemInfos();
+                    
+                    // Use parallel processing for better performance
+                    var localMatches = new List<FileItem>();
+                    var subdirs = new List<string>();
+
+                    foreach (var entry in entries)
+                    {
+                        if (cancellationToken.IsCancellationRequested || results.Count >= maxResults)
+                            break;
+
+                        try
+                        {
+                            // Skip excluded system folders
+                            if (entry is DirectoryInfo dir)
+                            {
+                                if (ExcludedFolders.Contains(dir.Name))
+                                    continue;
+
+                                subdirs.Add(dir.FullName);
+
+                                if (MatchesSearch(dir.Name, searchQuery))
+                                {
+                                    localMatches.Add(new FileItem
+                                    {
+                                        Name = dir.Name,
+                                        FullPath = dir.FullName,
+                                        IsDirectory = true,
+                                        Modified = dir.LastWriteTime,
+                                        RelativePath = Path.GetRelativePath(rootPath, dir.FullName)
+                                    });
+                                }
+                            }
+                            else if (entry is FileInfo file)
+                            {
+                                if (MatchesSearch(file.Name, searchQuery))
+                                {
+                                    localMatches.Add(new FileItem
+                                    {
+                                        Name = file.Name,
+                                        FullPath = file.FullName,
+                                        IsDirectory = false,
+                                        Size = file.Length,
+                                        Modified = file.LastWriteTime,
+                                        RelativePath = Path.GetRelativePath(rootPath, file.FullName)
+                                    });
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Skip entries we can't access
+                        }
+                    }
+
+                    // Add matches to results
+                    foreach (var match in localMatches)
+                    {
+                        if (results.Count >= maxResults)
+                            break;
+                        results.Add(match);
+                    }
+
+                    // Add subdirectories to queue for next level
+                    foreach (var subdir in subdirs)
+                    {
+                        if (results.Count >= maxResults || cancellationToken.IsCancellationRequested)
+                            break;
+                        queue.Enqueue((subdir, depth + 1));
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Skip directories we don't have permission to access
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error searching directory {currentPath}: {ex.Message}");
+                }
+            }
         }
     }
 }

@@ -12,6 +12,8 @@ namespace App.Models
         public DateTime Modified { get; set; }
         public string Icon => IsDirectory ? "📁" : "📄";
         public string SizeDisplay => IsDirectory ? "-" : FormatBytes(Size);
+        public string? RelativePath { get; set; } // For search results
+        public string DisplayName => string.IsNullOrEmpty(RelativePath) ? Name : RelativePath;
 
         private bool _isSelected;
         public bool IsSelected

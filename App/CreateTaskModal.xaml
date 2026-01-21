@@ -46,6 +46,16 @@
                             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
                             TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
 
+                <Label Text="Status"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light=#333333, Dark=#CCCCCC}"/>
+                <Entry Placeholder="e.g., Pending, In Progress, Completed"
+                       Text="{Binding NewTaskStatus}"
+                       PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
+                       BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
+
                 <Label Text="Attachment Folder (optional)"
                        FontSize="12"
                        FontAttributes="Bold"

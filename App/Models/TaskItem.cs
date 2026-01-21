@@ -7,11 +7,79 @@ namespace App.Models
     public class TaskItem : INotifyPropertyChanged
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        
+        private string _name = string.Empty;
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value)
+                {
+                    _name = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _description = string.Empty;
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public DateTime CreateDate { get; set; } = DateTime.Now;
-        public DateTime EndDate { get; set; } = DateTime.Now.AddDays(1);
-        public string AttachmentPath { get; set; } = string.Empty;
+
+        private DateTime _endDate = DateTime.Now.AddDays(1);
+        public DateTime EndDate
+        {
+            get => _endDate;
+            set
+            {
+                if (_endDate != value)
+                {
+                    _endDate = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(RemainingDays));
+                }
+            }
+        }
+
+        private string _attachmentPath = string.Empty;
+        public string AttachmentPath
+        {
+            get => _attachmentPath;
+            set
+            {
+                if (_attachmentPath != value)
+                {
+                    _attachmentPath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private string _status = "Pending";
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                if (_status != value)
+                {
+                    _status = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         private bool _isDone;
         public bool IsDone
@@ -23,7 +91,18 @@ namespace App.Models
                 {
                     _isDone = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(RemainingDays));
                 }
+            }
+        }
+
+        public int RemainingDays
+        {
+            get
+            {
+                if (IsDone) return 0;
+                var timeSpan = EndDate.Date - DateTime.Now.Date;
+                return (int)timeSpan.TotalDays;
             }
         }
 
