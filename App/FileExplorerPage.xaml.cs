@@ -59,15 +59,6 @@ namespace App
             }
         }
 
-        private async void OnTaskCheckBoxChanged(object sender, CheckedChangedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.BindingContext is TaskItem task && BindingContext is FileExplorerViewModel viewModel)
-            {
-                // Directly call the async method instead of using command to avoid UI freeze
-                await viewModel.ToggleTaskDoneAsync(task);
-            }
-        }
-
         private async void OnLogoutClicked(object sender, EventArgs e)
         {
             bool confirm = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");

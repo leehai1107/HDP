@@ -19,7 +19,6 @@ namespace App.ViewModels
     {
         private readonly IFileExplorerService _fileService;
         private readonly IConfigurationService _configService;
-        private readonly ITaskService _taskService;
         private readonly IFileIndexService _indexService;
         private readonly IAuthenticationService _authService;
         private readonly Stack<string> _backStack = new();
@@ -37,26 +36,11 @@ namespace App.ViewModels
         private bool _canGoBack = false;
         private bool _canGoForward = false;
         private bool _isSelectionMode = false;
-        private bool _isTaskPanelVisible = true;
         private string _fileSearchQuery = string.Empty;
-        private string _taskSearchQuery = string.Empty;
-        private string _taskSortMode = "None";
-        private string _taskFilterMode = "Active";
-
-        // Task properties
-        private string _newTaskName = string.Empty;
-        private string _newTaskDescription = string.Empty;
-        private DateTime _newTaskEndDate = DateTime.Now.AddDays(1);
-        private string _newTaskAttachmentPath = string.Empty;
-        private string _newTaskStatus = "Pending";
-        private User? _selectedAssignedUser = null;
 
         public ObservableCollection<FileItem> Items { get; } = new();
         public ObservableCollection<FileItem> SelectedItems { get; } = new();
-        public ObservableCollection<TaskItem> Tasks { get; } = new();
         public ObservableCollection<FileItem> FilteredItems { get; } = new();
-        public ObservableCollection<TaskItem> FilteredTasks { get; } = new();
-        public ObservableCollection<User> AssignableUsers { get; } = new();
 
         private void OnSelectedItemsChanged()
         {
@@ -199,18 +183,7 @@ namespace App.ViewModels
             }
         }
 
-        public bool IsTaskPanelVisible
-        {
-            get => _isTaskPanelVisible;
-            set
-            {
-                if (_isTaskPanelVisible != value)
-                {
-                    _isTaskPanelVisible = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
+
 
         public string FileSearchQuery
         {
@@ -226,133 +199,7 @@ namespace App.ViewModels
             }
         }
 
-        public string TaskSearchQuery
-        {
-            get => _taskSearchQuery;
-            set
-            {
-                if (_taskSearchQuery != value)
-                {
-                    _taskSearchQuery = value;
-                    OnPropertyChanged();
-                    FilterTasks();
-                }
-            }
-        }
 
-        public string TaskSortMode
-        {
-            get => _taskSortMode;
-            set
-            {
-                if (_taskSortMode != value)
-                {
-                    _taskSortMode = value;
-                    OnPropertyChanged();
-                    FilterTasks();
-                }
-            }
-        }
-
-        public string TaskFilterMode
-        {
-            get => _taskFilterMode;
-            set
-            {
-                if (_taskFilterMode != value)
-                {
-                    _taskFilterMode = value;
-                    OnPropertyChanged();
-                    FilterTasks();
-                    UpdateTaskCounts();
-                }
-            }
-        }
-
-        public int ActiveTasksCount => Tasks.Count(t => !t.IsDone);
-        public int DoneTasksCount => Tasks.Count(t => t.IsDone);
-
-        // Task Properties
-        public string NewTaskName
-        {
-            get => _newTaskName;
-            set
-            {
-                if (_newTaskName != value)
-                {
-                    _newTaskName = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public string NewTaskDescription
-        {
-            get => _newTaskDescription;
-            set
-            {
-                if (_newTaskDescription != value)
-                {
-                    _newTaskDescription = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public DateTime NewTaskEndDate
-        {
-            get => _newTaskEndDate;
-            set
-            {
-                if (_newTaskEndDate != value)
-                {
-                    _newTaskEndDate = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public string NewTaskAttachmentPath
-        {
-            get => _newTaskAttachmentPath;
-            set
-            {
-                if (_newTaskAttachmentPath != value)
-                {
-                    _newTaskAttachmentPath = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public string NewTaskStatus
-        {
-            get => _newTaskStatus;
-            set
-            {
-                if (_newTaskStatus != value)
-                {
-                    _newTaskStatus = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public User? SelectedAssignedUser
-        {
-            get => _selectedAssignedUser;
-            set
-            {
-                if (_selectedAssignedUser != value)
-                {
-                    _selectedAssignedUser = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool IsAdmin => _authService?.IsAdmin ?? false;
-        public string CurrentUsername => _authService?.CurrentUser?.DisplayName ?? "User";
 
         public ICommand NavigateCommand { get; }
         public ICommand GoBackCommand { get; }
@@ -365,24 +212,15 @@ namespace App.ViewModels
         public ICommand ToggleItemSelectionCommand { get; }
         public ICommand RenameCommand { get; }
         public ICommand DeleteSelectedCommand { get; }
-        public ICommand ToggleTaskPanelCommand { get; }
         public ICommand CopyPathCommand { get; }
         public ICommand BuildIndexCommand { get; }
-        
-        // Task Commands
-        public ICommand AddTaskCommand { get; }
-        public ICommand ToggleTaskDoneCommand { get; }
-        public ICommand DeleteTaskCommand { get; }
-        public ICommand NavigateToTaskPathCommand { get; }
-        public ICommand SetCurrentPathAsAttachmentCommand { get; }
-        public ICommand SwitchToActiveTabCommand { get; }
-        public ICommand SwitchToDoneTabCommand { get; }
 
-        public FileExplorerViewModel(IFileExplorerService fileService, IConfigurationService configService, ITaskService taskService, IFileIndexService indexService, IAuthenticationService authService)
+        public string CurrentUsername => _authService.CurrentUser?.Username ?? "Guest";
+
+        public FileExplorerViewModel(IFileExplorerService fileService, IConfigurationService configService, IFileIndexService indexService, IAuthenticationService authService)
         {
             _fileService = fileService;
             _configService = configService;
-            _taskService = taskService;
             _indexService = indexService;
             _authService = authService;
 
@@ -400,26 +238,14 @@ namespace App.ViewModels
             ToggleItemSelectionCommand = new Command<FileItem>(ToggleItemSelection);
             RenameCommand = new Command<FileItem>(async (item) => await RenameItemAsync(item));
             DeleteSelectedCommand = new Command(async () => await DeleteSelectedAsync(), () => SelectedItems.Count > 0);
-            ToggleTaskPanelCommand = new Command(() => IsTaskPanelVisible = !IsTaskPanelVisible);
             CopyPathCommand = new Command(async () => await CopyPathAsync());
             BuildIndexCommand = new Command(async () => await BuildIndexAsync());
-            
-            // Task Commands
-            AddTaskCommand = new Command(async () => await AddTaskAsync());
-            ToggleTaskDoneCommand = new Command<TaskItem>(async (task) => await ToggleTaskDoneAsync(task));
-            DeleteTaskCommand = new Command<TaskItem>(async (task) => await DeleteTaskAsync(task));
-            SwitchToActiveTabCommand = new Command(() => TaskFilterMode = "Active");
-            SwitchToDoneTabCommand = new Command(() => TaskFilterMode = "Done");
-            NavigateToTaskPathCommand = new Command<TaskItem>(async (task) => await NavigateToTaskPathAsync(task));
-            SetCurrentPathAsAttachmentCommand = new Command(() => NewTaskAttachmentPath = CurrentPath);
         }
 
         public async Task InitializeAsync()
         {
             CurrentPath = _configService.GetRootPath();
             await LoadItemsAsync();
-            await LoadTasksAsync();
-            LoadAssignableUsers();
             
             // Build index automatically in background
             _ = Task.Run(async () =>
@@ -453,34 +279,6 @@ namespace App.ViewModels
                     {
                         IndexStatus = string.Empty;
                     });
-                }
-            });
-        }
-
-        private async Task LoadTasksAsync()
-        {
-            var tasks = await _taskService.GetAllTasksAsync();
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                Tasks.Clear();
-                foreach (var task in tasks.OrderBy(t => t.CreateDate))
-                {
-                    Tasks.Add(task);
-                }
-                FilterTasks(); // Update filtered collection
-                UpdateTaskCounts(); // Update tab counts
-            });
-        }
-
-        private void LoadAssignableUsers()
-        {
-            var users = _authService.GetAssignableUsers();
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                AssignableUsers.Clear();
-                foreach (var user in users)
-                {
-                    AssignableUsers.Add(user);
                 }
             });
         }
@@ -723,126 +521,6 @@ namespace App.ViewModels
             }
         }
 
-        // Task Management Methods
-        public async Task AddTaskAsync()
-        {
-            if (string.IsNullOrWhiteSpace(NewTaskName))
-            {
-                await App.Current?.MainPage?.DisplayAlert("Error", "Please enter a task name", "OK");
-                return;
-            }
-
-            var task = new TaskItem
-            {
-                Name = NewTaskName,
-                Description = NewTaskDescription,
-                CreateDate = DateTime.Now,
-                EndDate = NewTaskEndDate,
-                AttachmentPath = NewTaskAttachmentPath,
-                Status = string.IsNullOrWhiteSpace(NewTaskStatus) ? "Pending" : NewTaskStatus,
-                IsDone = false,
-                AssignedTo = SelectedAssignedUser?.DisplayName ?? string.Empty,
-                AssignedToId = SelectedAssignedUser?.Id ?? string.Empty
-            };
-
-            if (await _taskService.AddTaskAsync(task))
-            {
-                Tasks.Add(task);
-                FilterTasks();
-                UpdateTaskCounts();
-                
-                // Clear form
-                NewTaskName = string.Empty;
-                NewTaskDescription = string.Empty;
-                NewTaskEndDate = DateTime.Now.AddDays(1);
-                NewTaskAttachmentPath = string.Empty;
-                NewTaskStatus = "Pending";
-                SelectedAssignedUser = null;
-            }
-            else
-            {
-                await App.Current?.MainPage?.DisplayAlert("Error", "Failed to create task", "OK");
-            }
-        }
-
-        public async Task ToggleTaskDoneAsync(TaskItem task)
-        {
-            if (task == null) return;
-
-            // Don't toggle here - the CheckBox binding already updated IsDone
-            // Just save the updated state to persistence
-            await _taskService.UpdateTaskAsync(task);
-            FilterTasks();
-            UpdateTaskCounts();
-        }
-
-        public async Task UpdateTaskAsync(TaskItem task)
-        {
-            if (task == null) return;
-
-            if (await _taskService.UpdateTaskAsync(task))
-            {
-                // Task updated successfully - no need to replace in collection
-                // since the task object is already in the collection and uses INotifyPropertyChanged
-            }
-            else
-            {
-                await App.Current?.MainPage?.DisplayAlert("Error", "Failed to update task", "OK");
-            }
-        }
-
-        private async Task DeleteTaskAsync(TaskItem task)
-        {
-            if (task == null) return;
-
-            var result = await App.Current?.MainPage?.DisplayAlert("Delete Task", 
-                $"Are you sure you want to delete '{task.Name}'?", "Yes", "No");
-            
-            if (result == true)
-            {
-                if (await _taskService.DeleteTaskAsync(task.Id))
-                {
-                    Tasks.Remove(task);
-                    FilterTasks();
-                    UpdateTaskCounts();
-                }
-                else
-                {
-                    await App.Current?.MainPage?.DisplayAlert("Error", "Failed to delete task", "OK");
-                }
-            }
-        }
-
-        private async Task NavigateToTaskPathAsync(TaskItem task)
-        {
-            if (task == null || string.IsNullOrWhiteSpace(task.AttachmentPath))
-                return;
-
-            if (_fileService.PathExists(task.AttachmentPath))
-            {
-                // Open the folder in Windows Explorer
-                try
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"\"{task.AttachmentPath}\"",
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex)
-                {
-                    await App.Current?.MainPage?.DisplayAlert("Error", 
-                        $"Failed to open folder in Windows Explorer: {ex.Message}", "OK");
-                }
-            }
-            else
-            {
-                await App.Current?.MainPage?.DisplayAlert("Error", 
-                    "The attached folder path does not exist or is not accessible.", "OK");
-            }
-        }
-
         private void DebouncedSearch()
         {
             // Cancel any ongoing search
@@ -961,61 +639,6 @@ namespace App.ViewModels
             {
                 FilteredItems.Add(item);
             }
-        }
-
-        private void FilterTasks()
-        {
-            FilteredTasks.Clear();
-            
-            IEnumerable<TaskItem> tasksToShow;
-            
-            // First filter by active/done status
-            if (TaskFilterMode == "Active")
-            {
-                tasksToShow = Tasks.Where(t => !t.IsDone);
-            }
-            else if (TaskFilterMode == "Done")
-            {
-                tasksToShow = Tasks.Where(t => t.IsDone);
-            }
-            else
-            {
-                tasksToShow = Tasks;
-            }
-            
-            // Apply search filter
-            if (!string.IsNullOrWhiteSpace(TaskSearchQuery))
-            {
-                tasksToShow = tasksToShow.Where(task => 
-                    task.Name.Contains(TaskSearchQuery, StringComparison.OrdinalIgnoreCase) ||
-                    (task.Description?.Contains(TaskSearchQuery, StringComparison.OrdinalIgnoreCase) ?? false));
-            }
-
-            // Apply sorting
-            switch (TaskSortMode)
-            {
-                case "DaysAscending":
-                    tasksToShow = tasksToShow.OrderBy(t => t.RemainingDays);
-                    break;
-                case "DaysDescending":
-                    tasksToShow = tasksToShow.OrderByDescending(t => t.RemainingDays);
-                    break;
-                case "None":
-                default:
-                    // Keep original order
-                    break;
-            }
-
-            foreach (var task in tasksToShow)
-            {
-                FilteredTasks.Add(task);
-            }
-        }
-
-        private void UpdateTaskCounts()
-        {
-            OnPropertyChanged(nameof(ActiveTasksCount));
-            OnPropertyChanged(nameof(DoneTasksCount));
         }
 
         private async Task CopyPathAsync()

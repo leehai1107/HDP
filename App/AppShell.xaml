@@ -7,28 +7,9 @@
     Title="File Explorer">
 
     <ShellContent
-        Title="Login"
-        ContentTemplate="{DataTemplate local:LoginPage}"
-        Route="Login"/>
-
-    <TabBar>
-        <ShellContent
-            Title="File Explorer"
-            Icon="folder.png"
-            ContentTemplate="{DataTemplate local:FileExplorerPage}"
-            Route="FileExplorer"/>
-
-        <ShellContent
-            Title="Tasks"
-            Icon="checklist.png"
-            ContentTemplate="{DataTemplate local:TasksPage}"
-            Route="Tasks"/>
-
-        <ShellContent
-            Title="Users"
-            Icon="dotnet_bot.png"
-            ContentTemplate="{DataTemplate local:UserManagementPage}"
-            Route="Users"/>
-    </TabBar>
+        Title="File Explorer"
+        Icon="folder.png"
+        ContentTemplate="{DataTemplate local:FileExplorerPage}"
+        Route="FileExplorer"/>
 
 </Shell>

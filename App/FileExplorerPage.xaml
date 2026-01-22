@@ -18,272 +18,88 @@
                                                     xmlns:converters="clr-namespace:App.Converters"/>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter"
                                              xmlns:converters="clr-namespace:App.Converters"/>
-            <converters:TaskTextDecorationConverter x:Key="TaskTextDecorationConverter"
-                                                    xmlns:converters="clr-namespace:App.Converters"/>
-            <converters:TaskOpacityConverter x:Key="TaskOpacityConverter"
-                                             xmlns:converters="clr-namespace:App.Converters"/>
-            <converters:BoolToWidthConverter x:Key="BoolToWidthConverter"
-                                             xmlns:converters="clr-namespace:App.Converters"/>
-            <converters:TaskPanelToggleConverter x:Key="TaskPanelToggleConverter"
-                                                 xmlns:converters="clr-namespace:App.Converters"/>
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <!-- Main Layout: Task Panel (Left) + File Explorer (Right) -->
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="{Binding IsTaskPanelVisible, Converter={StaticResource BoolToWidthConverter}}"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-
-        <!-- Task Panel (Left Side) -->
-        <Grid Grid.Column="0"
-              RowDefinitions="Auto,*"
-              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
-              IsVisible="{Binding IsTaskPanelVisible}">
-
-            <!-- Task Creation Form -->
-            <ScrollView Grid.Row="0"
-                        Padding="12">
-                <StackLayout Spacing="10">
-                    <Label Text="📝 Tasks"
-                           FontSize="20"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-
-                    <Entry Placeholder="Task name"
-                           Text="{Binding NewTaskName}"
-                           PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
-                           BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-
-                    <Editor Placeholder="Description"
-                            Text="{Binding NewTaskDescription}"
-                            HeightRequest="60"
-                            PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
-                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                            TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-
-                    <DatePicker Date="{Binding NewTaskEndDate}"
-                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                                TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-
-                    <Grid ColumnDefinitions="*,Auto"
-                          ColumnSpacing="8">
-                        <Entry Grid.Column="0"
-                               Placeholder="Folder path (attachment)"
-                               Text="{Binding NewTaskAttachmentPath}"
-                               PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
-                               BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                               TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
-                        <Button Grid.Column="1"
-                                Text="📁"
-                                Command="{Binding SetCurrentPathAsAttachmentCommand}"
-                                BackgroundColor="#2196F3"
-                                TextColor="White"
-                                Padding="8"/>
-                    </Grid>
-
-                    <Button Text="➕ Add Task"
-                            Command="{Binding AddTaskCommand}"
-                            BackgroundColor="#4CAF50"
-                            TextColor="White"
-                            Padding="12,8"/>
-
-                    <BoxView HeightRequest="1"
-                             Color="{AppThemeBinding Light=#DDDDDD, Dark=#444444}"
-                             Margin="0,10"/>
-                    
-                    <!-- Task Search Box -->
-                    <Border BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                            Stroke="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
-                            StrokeThickness="1"
-                            Padding="8,4">
-                        <Entry Placeholder="🔍 Search tasks..."
-                               Text="{Binding TaskSearchQuery}"
-                               PlaceholderColor="{AppThemeBinding Light=#999999, Dark=#666666}"
-                               TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                               FontSize="12"
-                               HeightRequest="32"/>
-                    </Border>
-                </StackLayout>
-            </ScrollView>
-
-            <!-- Task List -->
-            <CollectionView Grid.Row="1"
-                            ItemsSource="{Binding FilteredTasks}"
-                            SelectionMode="None">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#444444}"
-                                StrokeThickness="0,0,0,1"
-                                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
-                                Padding="12,8"
-                                Margin="8,4">
-                            <Grid RowDefinitions="Auto,Auto,Auto"
-                                  ColumnDefinitions="Auto,*,Auto,Auto"
-                                  RowSpacing="4"
-                                  ColumnSpacing="8"
-                                  Opacity="{Binding IsDone, Converter={StaticResource TaskOpacityConverter}}">
-
-                                <!-- Done Checkbox -->
-                                <CheckBox Grid.Row="0"
-                                          Grid.Column="0"
-                                          Grid.RowSpan="3"
-                                          IsChecked="{Binding IsDone}"
-                                          Color="#4CAF50"
-                                          VerticalOptions="Center"
-                                          CheckedChanged="OnTaskCheckBoxChanged"/>
-
-                                <!-- Task Name -->
-                                <Label Grid.Row="0"
-                                       Grid.Column="1"
-                                       Grid.ColumnSpan="3"
-                                       Text="{Binding Name}"
-                                       FontAttributes="Bold"
-                                       FontSize="14"
-                                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                                       TextDecorations="{Binding IsDone, Converter={StaticResource TaskTextDecorationConverter}}"/>
-
-                                <!-- Description -->
-                                <Label Grid.Row="1"
-                                       Grid.Column="1"
-                                       Grid.ColumnSpan="3"
-                                       Text="{Binding Description}"
-                                       FontSize="12"
-                                       TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}"
-                                       TextDecorations="{Binding IsDone, Converter={StaticResource TaskTextDecorationConverter}}"/>
-
-                                <!-- End Date -->
-                                <Label Grid.Row="2"
-                                       Grid.Column="1"
-                                       Text="{Binding EndDate, StringFormat='Due: {0:MM/dd/yyyy}'}"
-                                       FontSize="11"
-                                       TextColor="{AppThemeBinding Light=#999999, Dark=#888888}"/>
-
-                                <!-- Attachment Button -->
-                                <Button Grid.Row="2"
-                                        Grid.Column="2"
-                                        Text="📁"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.NavigateToTaskPathCommand}"
-                                        CommandParameter="{Binding .}"
-                                        BackgroundColor="Transparent"
-                                        TextColor="#2196F3"
-                                        Padding="4"
-                                        FontSize="14"
-                                        IsVisible="{Binding AttachmentPath, Converter={StaticResource InverseBoolConverter}, ConverterParameter='empty'}"/>
-
-                                <!-- Delete Button -->
-                                <Button Grid.Row="2"
-                                        Grid.Column="3"
-                                        Text="🗑️"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteTaskCommand}"
-                                        CommandParameter="{Binding .}"
-                                        BackgroundColor="Transparent"
-                                        TextColor="#F44336"
-                                        Padding="4"
-                                        FontSize="14"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </Grid>
-
-        <!-- File Explorer (Right Side) -->
-        <Grid Grid.Column="1"
-              RowDefinitions="Auto,Auto,Auto,Auto,*"
-              Padding="0"
-              BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+    <!-- Main Layout: File Explorer Only -->
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*"
+          Padding="0"
+          BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        
+        <!-- Top Toolbar with Navigation -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
+              ColumnSpacing="4"
+              Padding="8,6"
+              BackgroundColor="{AppThemeBinding Light=#F3F3F3, Dark=#2D2D2D}">
             
-            <!-- Top Toolbar with Toggle Button and Navigation -->
-            <Grid Grid.Row="0"
-                  ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
-                  ColumnSpacing="4"
-                  Padding="8,6"
-                  BackgroundColor="{AppThemeBinding Light=#F3F3F3, Dark=#2D2D2D}">
-                
-                <!-- Toggle Task Panel Button -->
-                <Button Grid.Column="0"
-                        Text="{Binding IsTaskPanelVisible, Converter={StaticResource TaskPanelToggleConverter}}"
-                        Command="{Binding ToggleTaskPanelCommand}"
-                        BackgroundColor="#0078D4"
-                        TextColor="White"
-                        Padding="10,6"
-                        FontSize="18"
-                        FontAttributes="Bold"
-                        CornerRadius="3"
-                        WidthRequest="45"
-                        HeightRequest="32"/>
-                
-                <!-- Back Button -->
-                <Button Grid.Column="1"
-                        Text="◀"
-                        Command="{Binding GoBackCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
-                        BorderWidth="1"
-                        Padding="8,4"
-                        FontSize="14"
-                        WidthRequest="36"
-                        HeightRequest="32"/>
-                
-                <!-- Forward Button -->
-                <Button Grid.Column="2"
-                        Text="▶"
-                        Command="{Binding GoForwardCommand}"
-                        IsEnabled="{Binding CanGoForward}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
-                        BorderWidth="1"
-                        Padding="8,4"
-                        FontSize="14"
-                        WidthRequest="36"
-                        HeightRequest="32"/>
-                
-                <!-- Up Button -->
-                <Button Grid.Column="3"
-                        Text="⬆ Up"
-                        Command="{Binding GoPreviousCommand}"
-                        IsEnabled="{Binding CanGoBack}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
-                        BorderWidth="1"
-                        Padding="8,4"
-                        FontSize="13"
-                        HeightRequest="32"
-                        HorizontalOptions="Start"
-                        Margin="4,0,0,0"/>
-                
-                <!-- Refresh Button -->
-                <Button Grid.Column="4"
-                        Text="🔄"
-                        Command="{Binding RefreshCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
-                        BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
-                        BorderWidth="1"
-                        Padding="8,4"
-                        FontSize="16"
-                        WidthRequest="36"
-                        HeightRequest="32"/>
-                
-                <!-- Select Mode Button -->
-                <Button Grid.Column="5"
-                        Text="{Binding IsSelectionMode, Converter={StaticResource SelectionModeConverter}}"
-                        Command="{Binding ToggleSelectionModeCommand}"
-                        BackgroundColor="{Binding IsSelectionMode, Converter={StaticResource SelectionModeColorConverter}}"
-                        TextColor="White"
-                        Padding="10,4"
-                        FontSize="13"
-                        HeightRequest="32"/>
-                
-                <!-- New Folder Button -->
-                <Button Grid.Column="6"
-                        Text="📁+"
+            <!-- Back Button -->
+            <Button Grid.Column="0"
+                    Text="◀"
+                    Command="{Binding GoBackCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                    BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                    BorderWidth="1"
+                    Padding="8,4"
+                    FontSize="14"
+                    WidthRequest="36"
+                    HeightRequest="32"/>
+            
+            <!-- Forward Button -->
+            <Button Grid.Column="1"
+                    Text="▶"
+                    Command="{Binding GoForwardCommand}"
+                    IsEnabled="{Binding CanGoForward}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                    BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                    BorderWidth="1"
+                    Padding="8,4"
+                    FontSize="14"
+                    WidthRequest="36"
+                    HeightRequest="32"/>
+            
+            <!-- Up Button -->
+            <Button Grid.Column="2"
+                    Text="⬆ Up"
+                    Command="{Binding GoPreviousCommand}"
+                    IsEnabled="{Binding CanGoBack}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                    BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                    BorderWidth="1"
+                    Padding="8,4"
+                    FontSize="13"
+                    HeightRequest="32"
+                    HorizontalOptions="Start"
+                    Margin="4,0,0,0"/>
+            
+            <!-- Refresh Button -->
+            <Button Grid.Column="3"
+                    Text="🔄"
+                    Command="{Binding RefreshCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
+                    BorderColor="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+                    BorderWidth="1"
+                    Padding="8,4"
+                    FontSize="16"
+                    WidthRequest="36"
+                    HeightRequest="32"/>
+            
+            <!-- Select Mode Button -->
+            <Button Grid.Column="4"
+                    Text="{Binding IsSelectionMode, Converter={StaticResource SelectionModeConverter}}"
+                    Command="{Binding ToggleSelectionModeCommand}"
+                    BackgroundColor="{Binding IsSelectionMode, Converter={StaticResource SelectionModeColorConverter}}"
+                    TextColor="White"
+                    Padding="10,4"
+                    FontSize="13"
+                    HeightRequest="32"/>
+            
+            <!-- New Folder Button -->
+            <Button Grid.Column="5"
                         Command="{Binding CreateFolderCommand}"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"
@@ -565,6 +381,5 @@
                        HorizontalTextAlignment="Center"/>
             </StackLayout>
 
-        </Grid>
     </Grid>
 </ContentPage>
